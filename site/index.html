@@ -1,475 +1,342 @@
-<!DOCTYPE html>
+<!-- site/index.html -->
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d1117" />
   <title>Road Trip Animal Game</title>
-  <meta name="theme-color" content="#0b1220" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
-    :root{
-      color-scheme: light dark;
-      --bg: #0b1220; --bg2:#0e1630;
-      --panel:#111a33; --panel2:#0f1730;
-      --text:#eaf2ff; --muted:#9db0d1;
-      --accent:#53d07c; --danger:#ff6b6b; --warning:#f7c948; --primary:#7aa2ff;
-      --outline:#223055; --shadow: rgba(2,8,23,.4);
-      --glow: 0 0 0 1px var(--outline) inset, 0 12px 40px var(--shadow);
-      --radius:16px; --tap: 56px;
+    :root {
+      color-scheme: dark;
+      --bg: #0d1117;
+      --panel: #121418;
+      --border: #222833;
+      --text: #e6edf3;
+      --muted: #9da7b3;
+      --accent: #3b82f6;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --btn: #1a1f29;
+      --btn2: #232a36;
     }
-    *{box-sizing:border-box; -webkit-tap-highlight-color: transparent}
-    html,body{
-      margin:0; height:100%;
-      background:
-        radial-gradient(1200px 600px at 10% -10%, #1a2a5a44, transparent 60%),
-        radial-gradient(1000px 500px at 110% 10%, #183c4a55, transparent 55%),
-        linear-gradient(180deg, var(--bg), var(--bg2) 40%, #08101d);
-      color:var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif; }
+    a { color: var(--accent); text-decoration: none; }
+
+    .wrap { max-width: 980px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+
+    header.app {
+      display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
     }
-    .shell{
-      display:grid; grid-template-rows:auto 1fr auto; gap:14px;
-      max-width:1100px; margin-inline:auto;
-      padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
-      min-height:100dvh;
+    .title { font-weight: 800; font-size: 18px; }
+    .now { font-size: 12px; color: var(--muted); text-align: right; }
+
+    .room {
+      display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px;
     }
-    header.appbar{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:12px 14px; background: linear-gradient(180deg, var(--panel), var(--panel2));
-      border:1px solid var(--outline); border-radius: calc(var(--radius) - 4px); box-shadow: var(--glow);
-      position:sticky; top:10px; z-index:3;
+    .room input {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: #0f1320; color: var(--text);
     }
-    .brand{ display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.3px }
-    .badge{ font-size:12px; color:var(--muted); font-weight:600 }
-    .controls{ display:flex; flex-wrap:wrap; gap:8px }
-    .sync{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted) }
-    .dot{ width:10px; height:10px; border-radius:999px; background:#666; box-shadow: 0 0 0 1px #334 }
-    .dot.ok{ background:#22c55e } .dot.wait{ background:#f59e0b } .dot.err{ background:#ef4444 }
-    button{
-      appearance:none; border:1px solid var(--outline);
-      background: linear-gradient(180deg, #1a2444, #121d3a); color:var(--text);
-      padding:12px 14px; border-radius:12px; min-height:var(--tap);
-      font-weight:750; letter-spacing:.2px; font-size:15px; line-height:1.1;
-      box-shadow: 0 6px 28px var(--shadow); cursor:pointer;
-      transition: transform .06s ease, filter .12s ease, background .12s ease, border-color .12s ease;
+    .room button {
+      padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--btn2); color: var(--text);
     }
-    button:active{ transform:translateY(1px) scale(.995) }
-    .btn-primary{ background: linear-gradient(180deg, #26407d, #1a2f63); border-color:#203a72 }
-    .btn-accent{ background: linear-gradient(180deg, #1d5b3b, #134a2e); border-color:#1c5c3b }
-    .btn-danger{ background: linear-gradient(180deg, #6b1f22, #54171a); border-color:#7c2327 }
-    .btn-warning{ background: linear-gradient(180deg, #7a5c14, #5f470f); color:#111; border-color:#7b5e12 }
-    .btn-ghost{ background: linear-gradient(180deg, #152140, #101b34) }
-    button:disabled{ opacity:.55; filter:grayscale(.35); cursor:not-allowed }
-    .columns{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; min-height:0; }
-    @media (max-width: 640px){
-      .columns{ display:flex; gap:14px; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:6px }
-      .col{ min-width: 92vw; scroll-snap-align: start }
+
+    .players {
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* Two players visible side-by-side on mobile */
+      gap: 10px;
+      align-items: start;
     }
-    .col{
-      display:grid; grid-template-rows:auto auto 1fr;
-      background: linear-gradient(180deg, #0e1936, #0c162f);
-      border:1px solid var(--outline); border-radius: var(--radius); box-shadow: var(--glow);
-      overflow:hidden; min-height: 520px;
+
+    .player {
+      display: flex; flex-direction: column; gap: 10px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px;
     }
-    .col header{
-      padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px;
-      background: linear-gradient(180deg, #0f1c3e, #0e1a39); border-bottom:1px solid var(--outline);
+
+    .header {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
     }
-    .col .name{ display:flex; align-items:baseline; gap:10px; font-size:18px; font-weight:900; letter-spacing:.3px }
-    .col .wins{ font-size:12px; color:var(--muted); font-weight:700; padding:4px 8px; border:1px solid var(--outline); border-radius:999px; background:#0d1936 }
-    .scorebar{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 16px; border-bottom:1px dashed #21345e; background: linear-gradient(180deg, #0e1a39, transparent) }
-    .scorebar .label{ color:var(--muted); font-weight:700 }
-    .scorebar .value{ font-weight:1000; font-size:44px; letter-spacing:.6px; text-shadow: 0 1px 0 #0007 }
-    .buttons{ padding:14px; display:grid; gap:10px; align-content:start; grid-template-columns: 1fr }
-    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px }
-    @media (max-width: 420px){ .row{ grid-template-columns: 1fr } }
-    .action{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 12px; border-radius:12px }
-    .action .left{ display:flex; align-items:center; gap:10px; font-weight:800 }
-    .emoji{ font-size:20px }
-    .pts{ font-weight:900; opacity:.95 }
-    .tiny{ font-size:11px; font-weight:700; opacity:.85 }
-    .status{ margin:6px 14px 14px; text-align:center; font-weight:900; min-height:22px; border-radius:10px; padding:6px 8px }
-    .status.win{ color:var(--accent); background:#1a3626; border:1px solid #204f34 }
-    .status.lose{ color:var(--danger); background:#371618; border:1px solid #5e2326 }
-    .status.tie{ color:#f7c948; background:#3b300d; border:1px solid #6e5713 }
-    footer.appfoot{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; color:var(--muted); font-size:12px; padding:8px 2px 12px }
-    .install-tip{ display:none; font-size:12px; color:var(--muted) }
-    .install-tip.show{ display:inline }
-    .room{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-    .room input{ width: 220px; max-width: 60vw; padding:8px 10px; border-radius:10px; border:1px solid var(--outline); background:#0e1a39; color:var(--text); font-weight:700 }
-    .copy{ font-size:12px; color:var(--muted) }
-    .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,1px,1px); white-space:nowrap; border:0 }
+    .name { font-weight: 800; font-size: 16px; }
+    .score { font-weight: 900; font-size: 28px; }
+
+    .wins { font-size: 12px; color: var(--muted); }
+
+    .buttons {
+      display: grid; grid-template-columns: 1fr; gap: 8px; /* single column inside each player */
+    }
+    .buttons button, .footer button, .room button, .actions button {
+      width: 100%; padding: 10px 12px; font-size: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--btn); color: var(--text);
+    }
+    .buttons button.animal { background: var(--btn2); }
+    .buttons button.danger { background: #22171a; border-color: #3a2227; color: #ffb4c0; }
+    .footer { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+    .footer button.reset { background: #221c17; border-color: #3a2a22; color: #ffd2b3; }
+
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .install { background: #182235; border-color: #223452; }
+
+    @media (max-width: 420px) {
+      .player { padding: 10px; }
+      .name { font-size: 15px; }
+      .score { font-size: 24px; }
+      .buttons button { padding: 9px 10px; font-size: 15px; }
+      .players { gap: 8px; }
+    }
+    @media (max-width: 360px) {
+      .players { column-gap: 6px; }
+      .score { font-size: 22px; }
+      .buttons { gap: 6px; }
+    }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <header class="appbar" role="banner">
-      <div class="brand">
-        <div style="font-size:22px">🐾</div>
-        <div>
-          <div style="font-weight:900;">Road Trip Animal Game</div>
-          <div class="badge" id="clock" aria-live="polite">—</div>
-        </div>
-      </div>
-      <div class="controls" role="group" aria-label="Game Controls">
-        <div class="sync" title="Sync status">
-          <span class="dot" id="syncDot"></span><span id="syncText">Idle</span>
-        </div>
-        <button id="installBtn" class="btn-primary" hidden>Install App</button>
-        <button id="newGame" class="btn-primary">New Game</button>
-        <button id="resetWins" class="btn-danger">Reset Wins</button>
-      </div>
+  <div class="wrap">
+    <header class="app">
+      <div class="title">🐮 Road Trip Animal Game</div>
+      <div class="now" id="now"></div>
     </header>
 
-    <main class="columns" role="main" aria-label="Score Columns">
-      <section class="col" id="bailyCol" aria-labelledby="bailyHdr">
-        <header>
-          <div class="name" id="bailyHdr">Baily</div>
-          <div class="wins"><span class="sr-only">Wins: </span><span id="bailyWins">0</span> wins</div>
-        </header>
-        <div class="scorebar" aria-live="polite">
-          <div class="label">Score</div>
-          <div class="value" id="bailyScore">0</div>
+    <section class="room">
+      <input id="room" type="text" placeholder="Room code (letters/numbers)" inputmode="latin" autocomplete="one-time-code" />
+      <button id="saveRoom">Use Code</button>
+    </section>
+
+    <section class="players">
+      <section class="player" data-player="baily">
+        <div class="header">
+          <div class="name">Baily</div>
+          <div class="score" id="score-baily">0</div>
         </div>
         <div class="buttons">
-          <div class="row">
-            <button class="action btn-accent" data-player="baily" data-points="5">
-              <div class="left"><span class="emoji">🐄</span> Cow</div>
-              <div class="right"><span class="pts">+5</span></div>
-            </button>
-            <button class="action btn-accent" data-player="baily" data-points="10">
-              <div class="left"><span class="emoji">🐴</span> Horse</div>
-              <div class="right"><span class="pts">+10</span></div>
-            </button>
-          </div>
-          <div class="row">
-            <button class="action btn-primary" data-player="baily" data-points="50">
-              <div class="left"><span class="emoji">🐕</span> Dog</div>
-              <div class="right"><span class="pts">+50</span></div>
-            </button>
-            <button class="action btn-primary" data-player="baily" data-points="100">
-              <div class="left"><span class="emoji">🐈</span> Cat</div>
-              <div class="right"><span class="pts">+100</span></div>
-            </button>
-          </div>
-          <div class="row">
-            <button class="action btn-warning" data-player="baily" data-points="1000" title="Instant win if you lead at 1000+">
-              <div class="left"><span class="emoji">🦌</span> Deer</div>
-              <div class="right"><span class="pts">+1000</span></div>
-            </button>
-            <button class="action btn-danger" data-player="baily" data-action="graveyard">
-              <div class="left"><span class="emoji">🪦</span> Graveyard</div>
-              <div class="right tiny">Lose all</div>
-            </button>
-          </div>
-          <button class="action btn-ghost" data-player="baily" data-action="end">
-            <div class="left"><span class="emoji">🏁</span> End Game</div>
-            <div class="right tiny">Now</div>
-          </button>
+          <button class="animal" data-delta="5"   data-player="baily">🐄 +5 Cow</button>
+          <button class="animal" data-delta="10"  data-player="baily">🐎 +10 Horse</button>
+          <button class="animal" data-delta="50"  data-player="baily">🐕 +50 Dog</button>
+          <button class="animal" data-delta="100" data-player="baily">🐈 +100 Cat</button>
+          <button class="animal" data-delta="1000" data-player="baily">🦌 +1000 Deer</button>
+          <button class="danger" data-graveyard="1" data-player="baily">🪦 Graveyard (reset)</button>
         </div>
-        <div class="status" id="bailyStatus" aria-live="polite"></div>
+        <div class="footer">
+          <button class="reset" data-reset="1" data-player="baily">Reset Score</button>
+          <div class="wins">Wins: <span id="wins-baily">0</span></div>
+        </div>
       </section>
 
-      <section class="col" id="taylorCol" aria-labelledby="taylorHdr">
-        <header>
-          <div class="name" id="taylorHdr">Taylor</div>
-          <div class="wins"><span class="sr-only">Wins: </span><span id="taylorWins">0</span> wins</div>
-        </header>
-        <div class="scorebar" aria-live="polite">
-          <div class="label">Score</div>
-          <div class="value" id="taylorScore">0</div>
+      <section class="player" data-player="taylor">
+        <div class="header">
+          <div class="name">Taylor</div>
+          <div class="score" id="score-taylor">0</div>
         </div>
         <div class="buttons">
-          <div class="row">
-            <button class="action btn-accent" data-player="taylor" data-points="5">
-              <div class="left"><span class="emoji">🐄</span> Cow</div>
-              <div class="right"><span class="pts">+5</span></div>
-            </button>
-            <button class="action btn-accent" data-player="taylor" data-points="10">
-              <div class="left"><span class="emoji">🐴</span> Horse</div>
-              <div class="right"><span class="pts">+10</span></div>
-            </button>
-          </div>
-          <div class="row">
-            <button class="action btn-primary" data-player="taylor" data-points="50">
-              <div class="left"><span class="emoji">🐕</span> Dog</div>
-              <div class="right"><span class="pts">+50</span></div>
-            </button>
-            <button class="action btn-primary" data-player="taylor" data-points="100">
-              <div class="left"><span class="emoji">🐈</span> Cat</div>
-              <div class="right"><span class="pts">+100</span></div>
-            </button>
-          </div>
-          <div class="row">
-            <button class="action btn-warning" data-player="taylor" data-points="1000">
-              <div class="left"><span class="emoji">🦌</span> Deer</div>
-              <div class="right"><span class="pts">+1000</span></div>
-            </button>
-            <button class="action btn-danger" data-player="taylor" data-action="graveyard">
-              <div class="left"><span class="emoji">🪦</span> Graveyard</div>
-              <div class="right tiny">Lose all</div>
-            </button>
-          </div>
-          <button class="action btn-ghost" data-player="taylor" data-action="end">
-            <div class="left"><span class="emoji">🏁</span> End Game</div>
-            <div class="right tiny">Now</div>
-          </button>
+          <button class="animal" data-delta="5"   data-player="taylor">🐄 +5 Cow</button>
+          <button class="animal" data-delta="10"  data-player="taylor">🐎 +10 Horse</button>
+          <button class="animal" data-delta="50"  data-player="taylor">🐕 +50 Dog</button>
+          <button class="animal" data-delta="100" data-player="taylor">🐈 +100 Cat</button>
+          <button class="animal" data-delta="1000" data-player="taylor">🦌 +1000 Deer</button>
+          <button class="danger" data-graveyard="1" data-player="taylor">🪦 Graveyard (reset)</button>
         </div>
-        <div class="status" id="taylorStatus" aria-live="polite"></div>
+        <div class="footer">
+          <button class="reset" data-reset="1" data-player="taylor">Reset Score</button>
+          <div class="wins">Wins: <span id="wins-taylor">0</span></div>
+        </div>
       </section>
-    </main>
+    </section>
 
-    <footer class="appfoot" role="contentinfo">
-      <div>First to 1000 points wins. End Game compares current scores.</div>
-      <div class="room">
-        <span>Room:</span>
-        <input id="roomCode" aria-label="Room code" />
-        <button id="shareRoom" class="btn-ghost">Share</button>
-        <span class="copy" id="shareHint">Open this same link on both phones.</span>
-      </div>
-    </footer>
+    <section class="actions">
+      <button id="install" class="install" hidden>Install App</button>
+      <button id="clear" class="danger">Clear Local Cache</button>
+    </section>
   </div>
 
   <script>
-    // CONFIG: set this to your Worker URL
-    const API_URL ='';
+    // Same-origin API (served by the Worker)
+    const API_URL = '';
 
-    // PWA service worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(console.error);
-      });
-    }
-    let deferredPrompt = null;
-    const installBtn = document.getElementById('installBtn');
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault(); deferredPrompt = e; installBtn.hidden = false;
-    });
-    installBtn?.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt(); await deferredPrompt.userChoice;
-      deferredPrompt = null; installBtn.hidden = true;
-    });
-    window.addEventListener('appinstalled', () => { installBtn.hidden = true; });
-
-    // Local simple store
-    const store = {
-      get(k, fb){ try{ const v = localStorage.getItem(k); return v===null?fb:JSON.parse(v) }catch{ return fb } },
-      set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)) }catch{} },
-    };
-
-    // Room handling
-    function genCode() {
-      const a = new Uint8Array(8); crypto.getRandomValues(a);
-      return Array.from(a).map(b => b.toString(16).padStart(2,'0')).join('').slice(0,10);
-    }
-    const url = new URL(location.href);
-    let room = url.searchParams.get('room') || store.get('room', null) || genCode();
-    if (!url.searchParams.get('room')) {
-      url.searchParams.set('room', room);
-      history.replaceState(null, '', url.toString());
-    }
-    store.set('room', room);
-    const roomInput = document.getElementById('roomCode');
-    roomInput.value = room;
-    roomInput.addEventListener('change', () => {
-      room = roomInput.value.trim() || room;
-      const u = new URL(location.href); u.searchParams.set('room', room);
-      history.replaceState(null, '', u.toString());
-      store.set('room', room);
-      syncPull();
-    });
-
-    // Share current URL
-    const shareBtn = document.getElementById('shareRoom');
-    shareBtn.addEventListener('click', async () => {
-      const shareUrl = location.href;
-      try {
-        if (navigator.share) { await navigator.share({ title: 'Animal Count Room', url: shareUrl }); }
-        else { await navigator.clipboard.writeText(shareUrl); alert('Link copied to clipboard'); }
-      } catch {}
-    });
-
-    // UI els
     const els = {
-      clock: document.getElementById('clock'),
-      bScore: document.getElementById('bailyScore'),
-      tScore: document.getElementById('taylorScore'),
-      bWins: document.getElementById('bailyWins'),
-      tWins: document.getElementById('taylorWins'),
-      bStat: document.getElementById('bailyStatus'),
-      tStat: document.getElementById('taylorStatus'),
-      newGame: document.getElementById('newGame'),
-      resetWins: document.getElementById('resetWins'),
-      allPlayerBtns: () => Array.from(document.querySelectorAll('button[data-player]')),
-      syncDot: document.getElementById('syncDot'),
-      syncText: document.getElementById('syncText'),
+      now: document.getElementById('now'),
+      room: document.getElementById('room'),
+      saveRoom: document.getElementById('saveRoom'),
+      score: {
+        baily: document.getElementById('score-baily'),
+        taylor: document.getElementById('score-taylor'),
+      },
+      wins: {
+        baily: document.getElementById('wins-baily'),
+        taylor: document.getElementById('wins-taylor'),
+      },
+      install: document.getElementById('install'),
+      clear: document.getElementById('clear'),
     };
 
     const state = {
-      target: 1000,
-      scores: { baily: 0, taylor: 0 },
+      code: '',
+      score: { baily: 0, taylor: 0 },
       wins: { baily: 0, taylor: 0 },
       updatedAt: 0,
-      gameOver: false
     };
 
-    function render(){
-      els.bScore.textContent = state.scores.baily;
-      els.tScore.textContent = state.scores.taylor;
-      els.bWins.textContent = state.wins.baily;
-      els.tWins.textContent = state.wins.taylor;
-      els.allPlayerBtns().forEach(b => b.disabled = state.gameOver);
+    // Time display
+    function tick() {
+      const d = new Date();
+      els.now.textContent = d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    }
+    setInterval(tick, 30000); tick();
+
+    // Room code handling
+    function readCodeFromURL() {
+      const u = new URL(location.href);
+      const q = (u.searchParams.get('code') || '').trim();
+      const h = (u.hash || '').replace(/^#/, '').trim();
+      return q || h || '';
+    }
+    function writeCodeToURL(code) {
+      const u = new URL(location.href);
+      if (code) u.searchParams.set('code', code); else u.searchParams.delete('code');
+      history.replaceState(null, '', u.toString());
     }
 
-    function setStatus(player, text, kind=''){
-      const el = player==='baily' ? els.bStat : els.tStat;
-      el.textContent = text;
-      el.classList.remove('win','lose','tie');
-      if(kind) el.classList.add(kind);
-    }
-    function clearStatuses(){ setStatus('baily',''); setStatus('taylor',''); }
-
-    // Sync indicator
-    function setSync(status, text){
-      els.syncDot.classList.remove('ok','wait','err');
-      if (status) els.syncDot.classList.add(status);
-      els.syncText.textContent = text || '';
+    function render() {
+      els.score.baily.textContent = state.score.baily;
+      els.score.taylor.textContent = state.score.taylor;
+      els.wins.baily.textContent = state.wins.baily;
+      els.wins.taylor.textContent = state.wins.taylor;
+      els.room.value = state.code;
     }
 
-    async function syncPull(){
-      try{
-        setSync('wait','Syncing…');
-        const r = await fetch(`${API_URL}/wins?code=${encodeURIComponent(room)}`, { cache:'no-store' });
-        if (!r.ok) throw new Error('pull failed');
-        const data = await r.json();
-        state.wins.baily = Number(data.baily||0);
-        state.wins.taylor = Number(data.taylor||0);
-        state.updatedAt = Number(data.updatedAt||Date.now());
+    function resetScore(player) {
+      state.score[player] = 0;
+      render();
+    }
+
+    function addScore(player, delta) {
+      state.score[player] = Math.max(0, state.score[player] + delta);
+      if (state.score[player] >= 1000) {
+        // Player wins the game
+        state.wins[player] += 1;
+        state.score.baily = 0;
+        state.score.taylor = 0;
+        state.updatedAt = Date.now();
         render();
-        setSync('ok','Up to date');
-      } catch(e){
-        setSync('err','Offline or server error');
-      }
-    }
-
-    let syncTimer = null;
-    async function syncPush(){
-      try{
-        setSync('wait','Saving…');
-        const body = {
-          code: room,
-          baily: state.wins.baily,
-          taylor: state.wins.taylor,
-          updatedAt: Date.now()
-        };
-        const r = await fetch(`${API_URL}/wins`, {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify(body)
-        });
-        if (!r.ok) throw new Error('push failed');
-        const data = await r.json();
-        state.wins.baily = Number(data.baily||0);
-        state.wins.taylor = Number(data.taylor||0);
-        state.updatedAt = Number(data.updatedAt||Date.now());
+        pushWins().catch(() => {});
+      } else {
         render();
-        setSync('ok','Saved');
-        clearTimeout(syncTimer);
-        syncTimer = setTimeout(()=> setSync('ok','Up to date'), 1200);
-      } catch(e){
-        setSync('err','Will retry when online');
-        if (navigator.onLine) setTimeout(syncPush, 2500);
       }
     }
 
-    function endGame(force=false){
-      if(state.gameOver) return;
-      const b = state.scores.baily, t = state.scores.taylor;
-      let winner = null;
-
-      if(!force){
-        if(b >= state.target && b > t) winner = 'baily';
-        else if(t >= state.target && t > b) winner = 'taylor';
-        else if(b >= state.target && t >= state.target){
-          if(b>t) winner='baily'; else if(t>b) winner='taylor'; else winner='tie';
-        } else {
-          return;
-        }
-      } else {
-        if(b>t) winner='baily'; else if(t>b) winner='taylor'; else winner='tie';
-      }
-
-      state.gameOver = true;
-      if(winner==='baily'){
-        state.wins.baily++; setStatus('baily','Winner! 🎉','win'); setStatus('taylor','Runner-up','lose');
-        syncPush();
-      } else if(winner==='taylor'){
-        state.wins.taylor++; setStatus('taylor','Winner! 🎉','win'); setStatus('baily','Runner-up','lose');
-        syncPush();
-      } else {
-        setStatus('baily','Tie game','tie'); setStatus('taylor','Tie game','tie');
-      }
-      render();
-    }
-
-    function addPoints(player, pts){
-      if(state.gameOver) return;
-      state.scores[player] = Math.max(0, state.scores[player] + pts);
-      render();
-      const other = player==='baily' ? 'taylor' : 'baily';
-      if(state.scores[player] >= state.target && state.scores[player] > state.scores[other]){
-        endGame(false);
-      }
-    }
-
-    function graveyard(player){
-      if(state.gameOver) return;
-      state.scores[player] = 0;
-      setStatus(player, 'Graveyard! Score reset.', 'lose');
-      render();
-    }
-
-    document.addEventListener('click', (e)=>{
+    // Buttons: animal, graveyard, reset
+    document.body.addEventListener('click', (e) => {
       const btn = e.target.closest('button');
-      if(!btn) return;
+      if (!btn) return;
 
-      if(btn === els.newGame){
-        state.scores.baily = 0; state.scores.taylor = 0; state.gameOver = false;
-        clearStatuses(); render(); return;
-      }
-      if(btn === els.resetWins){
-        if(confirm('Reset permanent wins for both players in this room?')){
-          state.wins.baily = 0; state.wins.taylor = 0; render(); syncPush();
-        }
+      if (btn === els.saveRoom) {
+        const v = (els.room.value || '').trim();
+        state.code = v.toUpperCase();
+        writeCodeToURL(state.code);
+        render();
+        pullWins().catch(() => {});
         return;
       }
 
-      const player = btn.getAttribute('data-player');
-      if(!player) return;
+      if (btn.dataset && btn.dataset.player) {
+        const player = btn.dataset.player;
+        if (btn.dataset.delta) {
+          addScore(player, parseInt(btn.dataset.delta, 10));
+          return;
+        }
+        if (btn.dataset.graveyard) {
+          resetScore(player);
+          return;
+        }
+        if (btn.dataset.reset) {
+          resetScore(player);
+          return;
+        }
+      }
 
-      const action = btn.getAttribute('data-action');
-      if(action === 'graveyard'){ graveyard(player); return; }
-      if(action === 'end'){ endGame(true); return; }
-
-      const pts = Number(btn.getAttribute('data-points')) || 0;
-      addPoints(player, pts);
+      if (btn === els.clear) {
+        caches && caches.keys && caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+        localStorage.clear();
+        alert('Local cache cleared.');
+        return;
+      }
     });
 
-    window.addEventListener('focus', () => { syncPull(); });
-
-    function updateClock(){
-      const now = new Date();
-      const date = now.toLocaleDateString(undefined,{ weekday:'short', month:'short', day:'numeric', year:'numeric' });
-      const time = now.toLocaleTimeString(undefined,{ hour:'2-digit', minute:'2-digit', second:'2-digit' });
-      document.getElementById('clock').textContent = `${date} • ${time}`;
+    // API calls
+    async function pullWins() {
+      if (!state.code) return;
+      const url = (API_URL || '') + '/wins?code=' + encodeURIComponent(state.code);
+      const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (!r.ok) throw new Error('pull failed');
+      const j = await r.json();
+      if (j && j.code) {
+        state.wins.baily = Number(j.baily || 0);
+        state.wins.taylor = Number(j.taylor || 0);
+        state.updatedAt = Number(j.updatedAt || Date.now());
+        render();
+      }
     }
-    updateClock(); setInterval(updateClock, 1000);
 
-    render();
-    syncPull();
+    async function pushWins() {
+      if (!state.code) return;
+      const url = (API_URL || '') + '/wins';
+      const body = {
+        code: state.code,
+        baily: state.wins.baily,
+        taylor: state.wins.taylor,
+        updatedAt: Date.now(),
+      };
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error('push failed');
+      const j = await r.json();
+      // Server may win conflict; accept server truth
+      state.wins.baily = Number(j.baily || 0);
+      state.wins.taylor = Number(j.taylor || 0);
+      state.updatedAt = Number(j.updatedAt || Date.now());
+      render();
+    }
+
+    // Init
+    (async function init() {
+      state.code = (readCodeFromURL() || '').toUpperCase();
+      render();
+      if (state.code) {
+        try { await pullWins(); } catch {}
+      }
+    })();
+
+    // Refresh wins on focus
+    window.addEventListener('focus', () => { if (state.code) pullWins().catch(() => {}); });
+
+    // PWA install prompt
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      els.install.hidden = false;
+    });
+    els.install.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      els.install.hidden = true;
+    });
+
+    // Service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
   </script>
 </body>
 </html>
