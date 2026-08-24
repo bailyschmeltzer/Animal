@@ -1,11 +1,11 @@
 name = "animal"
 main = "worker.js"
 compatibility_date = "2024-09-23"
-
+account_id ="70d6d67c4a961d7dda83ec448b0f6dc8"
 # IMPORTANT:
 # Since the binding already exists and is named KV_BINDING, do NOT add [[kv_namespaces]] here.
 # The dashboard binding will be used at deploy/runtime.
 # If you must use CLI-only bindings, they MUST match the same binding name:
-# [[kv_namespaces]]
-# binding = "KV_BINDING"
-# id = "35e47ac3075f443abd1bcc7f1f755655"
+[[kv_namespaces]]
+binding = "KV_BINDING"
+id = "35e47ac3075f443abd1bcc7f1f755655"
