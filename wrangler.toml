@@ -1,0 +1,10 @@
+name = "animal-count"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+[[kv_namespaces]]
+binding = "WINS_KV"
+id = "REPLACE_WITH_PROD_NAMESPACE_ID"
+# preview_id = "REPLACE_WITH_PREVIEW_NAMESPACE_ID"
+
+routes = []
