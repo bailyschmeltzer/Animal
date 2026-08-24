@@ -1,5 +1,6 @@
 name = "animal"
 main = "worker.js"
+assets = { directory = "./site" }
 compatibility_date = "2024-09-23"
 account_id ="70d6d67c4a961d7dda83ec448b0f6dc8"
 # IMPORTANT:
