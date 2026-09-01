@@ -224,6 +224,7 @@
     function resetScore(player) {
       state.score[player] = 0;
       render();
+      scheduleSync();
     }
 
     function addScore(player, delta) {
@@ -235,10 +236,23 @@
         state.score.taylor = 0;
         state.updatedAt = Date.now();
         render();
-        pushWins().catch(() => {});
+        flushSync(); // win events sync immediately, no debounce
       } else {
         render();
+        scheduleSync();
       }
+    }
+
+    // Coalesce rapid taps into one request, but never wait long before saving to the cloud
+    let syncTimer = null;
+    function scheduleSync() {
+      if (!state.code) return;
+      if (syncTimer) clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => { syncTimer = null; pushWins().catch(() => {}); }, 250);
+    }
+    function flushSync() {
+      if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
+      pushWins().catch(() => {});
     }
 
     // Buttons: save room, animal, graveyard, reset, clear cache
@@ -298,6 +312,8 @@
       if (!r.ok) throw new Error('pull failed');
       const j = await r.json();
       if (j && j.code) {
+        state.score.baily = Number((j.score && j.score.baily) || 0);
+        state.score.taylor = Number((j.score && j.score.taylor) || 0);
         state.wins.baily = Number(j.baily || 0);
         state.wins.taylor = Number(j.taylor || 0);
         state.updatedAt = Number(j.updatedAt || Date.now());
@@ -312,6 +328,7 @@
         code: state.code,
         baily: state.wins.baily,
         taylor: state.wins.taylor,
+        score: { baily: state.score.baily, taylor: state.score.taylor },
         updatedAt: Date.now(),
       };
       const r = await fetch(url, {
@@ -322,11 +339,30 @@
       if (!r.ok) throw new Error('push failed');
       const j = await r.json();
       // Server may win conflict; accept server truth
+      state.score.baily = Number((j.score && j.score.baily) || 0);
+      state.score.taylor = Number((j.score && j.score.taylor) || 0);
       state.wins.baily = Number(j.baily || 0);
       state.wins.taylor = Number(j.taylor || 0);
       state.updatedAt = Number(j.updatedAt || Date.now());
       render();
     }
+
+    // Best-effort save when the tab is closed/backgrounded, since a pending debounce timer would otherwise be lost
+    function flushSyncBeacon() {
+      if (!state.code || !navigator.sendBeacon) return;
+      const body = JSON.stringify({
+        code: state.code,
+        baily: state.wins.baily,
+        taylor: state.wins.taylor,
+        score: { baily: state.score.baily, taylor: state.score.taylor },
+        updatedAt: Date.now(),
+      });
+      navigator.sendBeacon((API_URL || '') + '/wins', new Blob([body], { type: 'application/json' }));
+    }
+    window.addEventListener('pagehide', flushSyncBeacon);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushSyncBeacon();
+    });
 
     // Init with persistence: URL > localStorage
     (async function init() {

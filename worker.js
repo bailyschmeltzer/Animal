@@ -53,7 +53,9 @@ export default {
         await env.KV_BINDING.put(key, JSON.stringify(doc));
         return json(doc);
       }
-      return json(JSON.parse(raw));
+      const doc = JSON.parse(raw);
+      doc.score = doc.score || { baily: 0, taylor: 0 }; // back-compat for docs saved before score tracking
+      return json(doc);
     }
 
     // API: wins POST
@@ -64,6 +66,7 @@ export default {
 
       const existing = await env.KV_BINDING.get(key);
       let server = existing ? JSON.parse(existing) : baselineDoc(body.code, { version: 0, updatedAt: 0 });
+      server.score = server.score || { baily: 0, taylor: 0 }; // back-compat for docs saved before score tracking
 
       const incomingTs = Number(body.updatedAt || Date.now());
       if (Number.isNaN(incomingTs)) return bad('Invalid updatedAt');
@@ -72,6 +75,10 @@ export default {
       if (incomingTs >= Number(server.updatedAt || 0)) {
         server.baily = clampInt(body.baily, 0);
         server.taylor = clampInt(body.taylor, 0);
+        server.score = {
+          baily: clampInt(body.score && body.score.baily, 0),
+          taylor: clampInt(body.score && body.score.taylor, 0),
+        };
         server.updatedAt = incomingTs;
         server.version = Number(server.version || 0) + 1;
         await env.KV_BINDING.put(key, JSON.stringify(server));
@@ -111,6 +118,7 @@ function baselineDoc(code, extra = {}) {
     code,
     baily: 0,
     taylor: 0,
+    score: { baily: 0, taylor: 0 },
     updatedAt: Date.now(),
     version: 1,
     ...extra,
