@@ -6,20 +6,21 @@ export default {
     const path = normalizePath(url.pathname);
     const method = request.method.toUpperCase();
 
-    // Simple CORS config for API routes
-    const CORS = {
+    // CORS & Cache prevention headers for live synchronization
+    const API_HEADERS = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
     };
 
-    // Helpers (scoped to fetch to avoid top-level return issues)
     const json = (data, init = {}) =>
       new Response(JSON.stringify(data), {
         ...init,
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
-          ...CORS,
+          ...API_HEADERS,
           ...(init.headers || {}),
         },
       });
@@ -32,19 +33,19 @@ export default {
 
     const isRoute = (name) => path === `/${name}` || path.endsWith(`/${name}`);
 
-    // CORS preflight for API
+    // CORS preflight
     if (method === 'OPTIONS') {
-      return new Response(null, { headers: CORS });
+      return new Response(null, { headers: API_HEADERS });
     }
 
-    // API: health
+    // API: health check
     if (isRoute('health')) {
       return json({ ok: true, service: 'animal-wins', ts: Date.now() });
     }
 
-    // API: wins GET
+    // API: GET /wins?code=ROOM
     if (isRoute('wins') && method === 'GET') {
-      const code = url.searchParams.get('code');
+      const code = (url.searchParams.get('code') || '').trim().toUpperCase();
       if (!code) return bad('Missing code');
       const key = kvKey(code);
       const raw = await env.KV_BINDING.get(key);
@@ -54,24 +55,27 @@ export default {
         return json(doc);
       }
       const doc = JSON.parse(raw);
-      doc.score = doc.score || { baily: 0, taylor: 0 }; // back-compat for docs saved before score tracking
+      doc.score = doc.score || { baily: 0, taylor: 0 };
+      doc.baily = clampInt(doc.baily, 0);
+      doc.taylor = clampInt(doc.taylor, 0);
       return json(doc);
     }
 
-    // API: wins POST
+    // API: POST /wins
     if (isRoute('wins') && method === 'POST') {
       const body = await safeJson(request);
       if (!body || !body.code) return bad('Missing code');
-      const key = kvKey(body.code);
+      const code = String(body.code).trim().toUpperCase();
+      const key = kvKey(code);
 
       const existing = await env.KV_BINDING.get(key);
-      let server = existing ? JSON.parse(existing) : baselineDoc(body.code, { version: 0, updatedAt: 0 });
-      server.score = server.score || { baily: 0, taylor: 0 }; // back-compat for docs saved before score tracking
+      let server = existing ? JSON.parse(existing) : baselineDoc(code, { version: 0, updatedAt: 0 });
+      server.score = server.score || { baily: 0, taylor: 0 };
 
       const incomingTs = Number(body.updatedAt || Date.now());
       if (Number.isNaN(incomingTs)) return bad('Invalid updatedAt');
 
-      // Last-write-wins by updatedAt
+      // Update state if incoming change is newer or equal
       if (incomingTs >= Number(server.updatedAt || 0)) {
         server.baily = clampInt(body.baily, 0);
         server.taylor = clampInt(body.taylor, 0);
@@ -86,36 +90,32 @@ export default {
       return json(server);
     }
 
-    // Static assets (UI) for everything else
-    // Try to serve from assets. If 404 and it's a likely SPA route, fall back to index.html.
+    // Static assets
     const assetResp = await env.ASSETS.fetch(request);
     if (assetResp.status !== 404) return assetResp;
 
-    // SPA fallback: only for GET requests that accept HTML
+    // SPA fallback for HTML navigations
     if (method === 'GET' && acceptsHtml(request)) {
       const rootUrl = new URL('/', url);
       return env.ASSETS.fetch(new Request(rootUrl.toString(), request));
     }
 
-    // Not found
     return new Response('Not found', { status: 404 });
   },
 };
 
-// Utility functions (pure; safe at top-level)
 function normalizePath(p) {
-  // collapse duplicate trailing slashes; keep root as '/'
   const trimmed = p.replace(/\/+$/, '');
   return trimmed || '/';
 }
 
 function kvKey(code) {
-  return `wins:${String(code).trim()}`;
+  return `wins:${String(code).trim().toUpperCase()}`;
 }
 
 function baselineDoc(code, extra = {}) {
   return {
-    code,
+    code: String(code).trim().toUpperCase(),
     baily: 0,
     taylor: 0,
     score: { baily: 0, taylor: 0 },

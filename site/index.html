@@ -41,15 +41,15 @@
     }
     .room input {
       width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
-      background: #0f1320; color: var(--text);
+      background: #0f1320; color: var(--text); font-size: 16px;
     }
     .room button {
-      padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--btn2); color: var(--text);
+      padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--btn2); color: var(--text); font-weight: 600; cursor: pointer;
     }
 
     .players {
       display: grid;
-      grid-template-columns: 1fr 1fr; /* Two players visible side-by-side on mobile */
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
       align-items: start;
     }
@@ -68,10 +68,10 @@
     .wins { font-size: 12px; color: var(--muted); }
 
     .buttons {
-      display: grid; grid-template-columns: 1fr; gap: 8px; /* single column inside each player */
+      display: grid; grid-template-columns: 1fr; gap: 8px;
     }
     .buttons button, .footer button, .room button, .actions button {
-      width: 100%; padding: 10px 12px; font-size: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--btn); color: var(--text);
+      width: 100%; padding: 10px 12px; font-size: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--btn); color: var(--text); cursor: pointer;
     }
     .buttons button.animal { background: var(--btn2); }
     .buttons button.danger { background: #22171a; border-color: #3a2227; color: #ffb4c0; }
@@ -103,7 +103,7 @@
     </header>
 
     <section class="room">
-      <input id="room" type="text" placeholder="Room code (letters/numbers)" inputmode="latin" autocomplete="one-time-code" />
+      <input id="room" type="text" placeholder="Room code (e.g. TRIP1)" inputmode="latin" autocomplete="one-time-code" />
       <button id="saveRoom">Use Code</button>
     </section>
 
@@ -154,17 +154,14 @@
   </div>
 
   <script>
-    // Same-origin API (served by the Worker)
     const API_URL = '';
-
-    // Persist room code locally
     const STORAGE_KEY = 'animal_room_code';
 
     function getStoredCode() {
-      try { return localStorage.getItem(STORAGE_KEY) || ''; } catch { return ''; }
+      try { return (localStorage.getItem(STORAGE_KEY) || '').trim().toUpperCase(); } catch { return ''; }
     }
     function setStoredCode(code) {
-      try { localStorage.setItem(STORAGE_KEY, String(code || '')); } catch {}
+      try { localStorage.setItem(STORAGE_KEY, String(code || '').trim().toUpperCase()); } catch {}
     }
     function clearStoredCode() {
       try { localStorage.removeItem(STORAGE_KEY); } catch {}
@@ -193,20 +190,22 @@
       updatedAt: 0,
     };
 
-    // Time display
+    let isPushing = false;
+
     function tick() {
       const d = new Date();
       els.now.textContent = d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
     }
-    setInterval(tick, 30000); tick();
+    setInterval(tick, 30000);
+    tick();
 
-    // Room code in URL
     function readCodeFromURL() {
       const u = new URL(location.href);
       const q = (u.searchParams.get('code') || '').trim();
       const h = (u.hash || '').replace(/^#/, '').trim();
-      return q || h || '';
+      return (q || h || '').toUpperCase();
     }
+
     function writeCodeToURL(code) {
       const u = new URL(location.href);
       if (code) u.searchParams.set('code', code); else u.searchParams.delete('code');
@@ -218,51 +217,59 @@
       els.score.taylor.textContent = state.score.taylor;
       els.wins.baily.textContent = state.wins.baily;
       els.wins.taylor.textContent = state.wins.taylor;
-      els.room.value = state.code;
+      if (document.activeElement !== els.room) {
+        els.room.value = state.code;
+      }
     }
 
     function resetScore(player) {
       state.score[player] = 0;
+      state.updatedAt = Date.now();
       render();
-      scheduleSync();
+      flushSync();
     }
 
     function addScore(player, delta) {
       state.score[player] = Math.max(0, state.score[player] + delta);
+      state.updatedAt = Date.now();
       if (state.score[player] >= 1000) {
-        // Player wins the game
         state.wins[player] += 1;
         state.score.baily = 0;
         state.score.taylor = 0;
-        state.updatedAt = Date.now();
         render();
-        flushSync(); // win events sync immediately, no debounce
+        flushSync();
       } else {
         render();
         scheduleSync();
       }
     }
 
-    // Coalesce rapid taps into one request, but never wait long before saving to the cloud
     let syncTimer = null;
     function scheduleSync() {
       if (!state.code) return;
       if (syncTimer) clearTimeout(syncTimer);
-      syncTimer = setTimeout(() => { syncTimer = null; pushWins().catch(() => {}); }, 250);
+      syncTimer = setTimeout(() => {
+        syncTimer = null;
+        pushWins().catch(() => {});
+      }, 250);
     }
+
     function flushSync() {
-      if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
+      if (syncTimer) {
+        clearTimeout(syncTimer);
+        syncTimer = null;
+      }
       pushWins().catch(() => {});
     }
 
-    // Buttons: save room, animal, graveyard, reset, clear cache
+    // Button interactions
     document.body.addEventListener('click', (e) => {
       const btn = e.target.closest('button');
       if (!btn) return;
 
       if (btn === els.saveRoom) {
-        const v = (els.room.value || '').trim();
-        state.code = v.toUpperCase();
+        const v = (els.room.value || '').trim().toUpperCase();
+        state.code = v;
         setStoredCode(state.code);
         writeCodeToURL(state.code);
         render();
@@ -276,28 +283,24 @@
           addScore(player, parseInt(btn.dataset.delta, 10));
           return;
         }
-        if (btn.dataset.graveyard) {
-          resetScore(player);
-          return;
-        }
-        if (btn.dataset.reset) {
+        if (btn.dataset.graveyard || btn.dataset.reset) {
           resetScore(player);
           return;
         }
       }
 
       if (btn === els.clear) {
-        // Clear caches but keep room code by default
         const keepCode = getStoredCode();
-        caches && caches.keys && caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+        if (window.caches && caches.keys) {
+          caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))));
+        }
         localStorage.clear();
         if (keepCode) setStoredCode(keepCode);
-        alert('Local cache cleared. Room code preserved.');
-        return;
+        alert('Local cache cleared. Reloading page...');
+        location.reload();
       }
     });
 
-    // Press Enter to save room
     els.room.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         els.saveRoom.click();
@@ -306,48 +309,63 @@
 
     // API calls
     async function pullWins() {
+      if (!state.code || isPushing) return;
+      try {
+        const url = (API_URL || '') + '/wins?code=' + encodeURIComponent(state.code) + '&t=' + Date.now();
+        const r = await fetch(url, {
+          cache: 'no-store',
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!r.ok) return;
+        const j = await r.json();
+        if (j && j.code) {
+          const incomingTs = Number(j.updatedAt || 0);
+          // Only apply server state if we aren't in the middle of a more recent local change
+          if (incomingTs >= state.updatedAt) {
+            state.score.baily = Number((j.score && j.score.baily) || 0);
+            state.score.taylor = Number((j.score && j.score.taylor) || 0);
+            state.wins.baily = Number(j.baily || 0);
+            state.wins.taylor = Number(j.taylor || 0);
+            state.updatedAt = incomingTs;
+            render();
+          }
+        }
+      } catch (err) {
+        console.error('pull error', err);
+      }
+    }
+
+    async function pushWins() {
       if (!state.code) return;
-      const url = (API_URL || '') + '/wins?code=' + encodeURIComponent(state.code);
-      const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      if (!r.ok) throw new Error('pull failed');
-      const j = await r.json();
-      if (j && j.code) {
+      isPushing = true;
+      try {
+        const url = (API_URL || '') + '/wins';
+        const body = {
+          code: state.code,
+          baily: state.wins.baily,
+          taylor: state.wins.taylor,
+          score: { baily: state.score.baily, taylor: state.score.taylor },
+          updatedAt: state.updatedAt || Date.now(),
+        };
+        const r = await fetch(url, {
+          method: 'POST',
+          cache: 'no-store',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!r.ok) throw new Error('push failed');
+        const j = await r.json();
         state.score.baily = Number((j.score && j.score.baily) || 0);
         state.score.taylor = Number((j.score && j.score.taylor) || 0);
         state.wins.baily = Number(j.baily || 0);
         state.wins.taylor = Number(j.taylor || 0);
         state.updatedAt = Number(j.updatedAt || Date.now());
         render();
+      } finally {
+        isPushing = false;
       }
     }
 
-    async function pushWins() {
-      if (!state.code) return;
-      const url = (API_URL || '') + '/wins';
-      const body = {
-        code: state.code,
-        baily: state.wins.baily,
-        taylor: state.wins.taylor,
-        score: { baily: state.score.baily, taylor: state.score.taylor },
-        updatedAt: Date.now(),
-      };
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) throw new Error('push failed');
-      const j = await r.json();
-      // Server may win conflict; accept server truth
-      state.score.baily = Number((j.score && j.score.baily) || 0);
-      state.score.taylor = Number((j.score && j.score.taylor) || 0);
-      state.wins.baily = Number(j.baily || 0);
-      state.wins.taylor = Number(j.taylor || 0);
-      state.updatedAt = Number(j.updatedAt || Date.now());
-      render();
-    }
-
-    // Best-effort save when the tab is closed/backgrounded, since a pending debounce timer would otherwise be lost
     function flushSyncBeacon() {
       if (!state.code || !navigator.sendBeacon) return;
       const body = JSON.stringify({
@@ -355,37 +373,47 @@
         baily: state.wins.baily,
         taylor: state.wins.taylor,
         score: { baily: state.score.baily, taylor: state.score.taylor },
-        updatedAt: Date.now(),
+        updatedAt: state.updatedAt || Date.now(),
       });
       navigator.sendBeacon((API_URL || '') + '/wins', new Blob([body], { type: 'application/json' }));
     }
+
     window.addEventListener('pagehide', flushSyncBeacon);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') flushSyncBeacon();
+      if (document.visibilityState === 'hidden') {
+        flushSyncBeacon();
+      } else if (document.visibilityState === 'visible') {
+        pullWins().catch(() => {});
+      }
     });
 
-    // Init with persistence: URL > localStorage
     (async function init() {
-      const fromUrl = (readCodeFromURL() || '').toUpperCase();
-      const fromStore = (getStoredCode() || '').toUpperCase();
+      const fromUrl = readCodeFromURL();
+      const fromStore = getStoredCode();
       state.code = fromUrl || fromStore || '';
       if (state.code) {
-        setStoredCode(state.code);   // ensure stored
-        writeCodeToURL(state.code);  // keep URL in sync
+        setStoredCode(state.code);
+        writeCodeToURL(state.code);
       }
       render();
       if (state.code) {
-        try { await pullWins(); } catch {}
+        await pullWins();
       }
+      // Live background sync polling every 3 seconds across devices
+      setInterval(() => {
+        if (state.code && document.visibilityState === 'visible') {
+          pullWins().catch(() => {});
+        }
+      }, 3000);
     })();
 
-    // Refresh wins on focus
-    window.addEventListener('focus', () => { if (state.code) pullWins().catch(() => {}); });
+    window.addEventListener('focus', () => {
+      if (state.code) pullWins().catch(() => {});
+    });
 
-    // Keep other tabs/windows synced with storage updates
     window.addEventListener('storage', (e) => {
       if (e.key === STORAGE_KEY) {
-        const newCode = (e.newValue || '').toUpperCase();
+        const newCode = (e.newValue || '').trim().toUpperCase();
         if (newCode && newCode !== state.code) {
           state.code = newCode;
           writeCodeToURL(state.code);
@@ -410,7 +438,7 @@
       els.install.hidden = true;
     });
 
-    // Service worker
+    // Service Worker registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(() => {});
